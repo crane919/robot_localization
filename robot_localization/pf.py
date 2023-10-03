@@ -241,12 +241,17 @@ class ParticleFilter(Node):
     def initialize_particle_cloud(self, timestamp, xy_theta=None):
         """ Initialize the particle cloud.
             Arguments
+            timestamp: hi :)
             xy_theta: a triple consisting of the mean x, y, and theta (yaw) to initialize the
                       particle cloud around.  If this input is omitted, the odometry will be used """
         if xy_theta is None:
             xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
         self.particle_cloud = []
         # TODO create particles
+        
+        print("Helloooooo WOrldkafsjpag", xy_theta)
+        particle_0 = Particle(x=xy_theta[0],y=xy_theta[1],theta=xy_theta[2])
+        self.particle_cloud.append(particle_0)
 
         self.normalize_particles()
         self.update_robot_pose()
