@@ -76,7 +76,7 @@ class ParticleFilter(Node):
         self.odom_frame = "odom"        # the name of the odometry coordinate frame
         self.scan_topic = "scan"        # the topic where we will get laser scans from 
 
-        self.n_particles = 300          # the number of particles to use
+        self.n_particles = 4          # the number of particles to use
 
         self.d_thresh = 0.2             # the amount of linear movement before performing an update
         self.a_thresh = math.pi/6       # the amount of angular movement before performing an update
@@ -202,17 +202,38 @@ class ParticleFilter(Node):
         new_odom_xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
         # compute the change in x,y,theta since our last update
         if self.current_odom_xy_theta:
-            old_odom_xy_theta = self.current_odom_xy_theta
-            delta = (new_odom_xy_theta[0] - self.current_odom_xy_theta[0],
-                     new_odom_xy_theta[1] - self.current_odom_xy_theta[1],
-                     new_odom_xy_theta[2] - self.current_odom_xy_theta[2])
+            new_odom_matrix = self.create_pose(new_odom_xy_theta)
+            curr_odom_matrix = self.create_pose(self.current_odom_xy_theta)
+
+            delta_matrix = np.linalg.inv(curr_odom_matrix) @ new_odom_matrix
+            delta_x_body = delta_matrix[0,2]
+            delta_y_body = delta_matrix[1,2]
+            delta_theta_body = np.arctan2(delta_matrix[1,0],delta_matrix[0,0])
 
             self.current_odom_xy_theta = new_odom_xy_theta
         else:
             self.current_odom_xy_theta = new_odom_xy_theta
             return
 
+        print(delta_matrix)
         # TODO: modify particles using delta
+        for i,particle in enumerate(self.particle_cloud):
+            particle_matrix = self.create_pose([particle.x,particle.y,particle.theta])
+            particle_matrix_new = particle_matrix @ delta_matrix
+            self.particle_cloud[i].x = particle_matrix_new[0,2]
+            self.particle_cloud[i].y = particle_matrix_new[1,2]
+            self.particle_cloud[i].theta = np.arctan2(particle_matrix_new[1,0],particle_matrix_new[0,0])
+
+    def create_pose(self,v_pose):
+        """
+        doc string later hehehehehehehehe
+        """
+        pose_matrix = np.array([
+            [np.cos(v_pose[2]), -np.sin(v_pose[2]), v_pose[0]],
+            [np.sin(v_pose[2]), np.cos(v_pose[2]), v_pose[1]],
+            [0,0,1]
+        ])
+        return pose_matrix
 
     def resample_particles(self):
         """ Resample the particles according to the new particle weights.
@@ -247,11 +268,12 @@ class ParticleFilter(Node):
         if xy_theta is None:
             xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
         self.particle_cloud = []
-        # TODO create particles
         
         print("Helloooooo WOrldkafsjpag", xy_theta)
-        particle_0 = Particle(x=xy_theta[0],y=xy_theta[1],theta=xy_theta[2])
-        self.particle_cloud.append(particle_0)
+        delta_theta = 2*math.pi/self.n_particles
+        for i in range(self.n_particles):
+            particle_0 = Particle(x=xy_theta[0],y=xy_theta[1],theta=xy_theta[2]+delta_theta*i)
+            self.particle_cloud.append(particle_0)
 
         self.normalize_particles()
         self.update_robot_pose()
