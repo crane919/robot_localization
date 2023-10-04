@@ -182,7 +182,6 @@ class ParticleFilter(Node):
                 (2): compute the most likely pose (i.e. the mode of the distribution)
         """
         # first make sure that the particle weights are normalized
-        self.normalize_particles()
 
         # TODO: assign the latest pose into self.robot_pose as a geometry_msgs.Pose object
         # just to get started we will fix the robot's pose to always be at the origin
@@ -240,9 +239,17 @@ class ParticleFilter(Node):
             particle is selected in the resampling step.  You may want to make use of the given helper
             function draw_random_sample in helper_functions.py.
         """
-        # make sure the distribution is normalized
-        self.normalize_particles()
-        # TODO: fill out the rest of the implementation
+        weights = np.array([particle.w for particle in self.particle_cloud])
+        median_weight = np.median(weights)
+        i_particles_to_replace = np.where(weights <= median_weight)[0]
+        num_replace = len(i_particles_to_replace)
+        i_new_locations = np.random.choice(range(len(weights)), num_replace, p = weights).astype(np.int)
+        for i,i_replace in enumerate(i_particles_to_replace):
+            print(i_replace, i_new_locations[i], i)
+            self.particle_cloud[i_replace].x = self.particle_cloud[i_new_locations[i]].x
+            self.particle_cloud[i_replace].y = self.particle_cloud[i_new_locations[i]].y
+            self.particle_cloud[i_replace].theta = np.random.uniform(0,2*np.pi)
+
 
     def update_particles_with_laser(self, r, theta):
         """ Updates the particle weights in response to the scan data
@@ -288,7 +295,6 @@ class ParticleFilter(Node):
             particle_0 = Particle(x=xy_theta[0],y=xy_theta[1],theta=xy_theta[2]+delta_theta*i)
             self.particle_cloud.append(particle_0)
 
-        self.normalize_particles()
         self.update_robot_pose()
 
     def publish_particles(self, timestamp):
