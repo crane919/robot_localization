@@ -181,11 +181,10 @@ class ParticleFilter(Node):
                 (1): compute the mean pose
                 (2): compute the most likely pose (i.e. the mode of the distribution)
         """
-        # first make sure that the particle weights are normalized
-
-        # TODO: assign the latest pose into self.robot_pose as a geometry_msgs.Pose object
-        # just to get started we will fix the robot's pose to always be at the origin
-        self.robot_pose = Pose()
+        weights = np.array([particle.w for particle in self.particle_cloud])
+        probable_particle = self.particle_cloud[np.argmax(weights)]      
+        
+        self.robot_pose = probable_particle.as_pose()
         if hasattr(self, 'odom_pose'):
             self.transform_helper.fix_map_to_odom_transform(self.robot_pose,
                                                             self.odom_pose)
