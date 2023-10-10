@@ -76,7 +76,7 @@ class ParticleFilter(Node):
         self.odom_frame = "odom"        # the name of the odometry coordinate frame
         self.scan_topic = "scan"        # the topic where we will get laser scans from 
 
-        self.n_particles = 50          # the number of particles to use
+        self.n_particles = 100          # the number of particles to use
 
         self.d_thresh = 0.2             # the amount of linear movement before performing an update
         self.a_thresh = math.pi/6       # the amount of angular movement before performing an update
@@ -239,15 +239,14 @@ class ParticleFilter(Node):
             function draw_random_sample in helper_functions.py.
         """
         weights = np.array([particle.w for particle in self.particle_cloud])
-        median_weight = np.median(weights)
+        median_weight = np.percentile(weights, 20)
         i_particles_to_replace = np.where(weights <= median_weight)[0]
         num_replace = len(i_particles_to_replace)
         i_new_locations = np.random.choice(range(len(weights)), num_replace, p = weights).astype(np.int)
         for i,i_replace in enumerate(i_particles_to_replace):
-            print(i_replace, i_new_locations[i], i)
             self.particle_cloud[i_replace].x = self.particle_cloud[i_new_locations[i]].x
             self.particle_cloud[i_replace].y = self.particle_cloud[i_new_locations[i]].y
-            self.particle_cloud[i_replace].theta = np.random.uniform(0,2*np.pi)
+            self.particle_cloud[i_replace].theta = self.particle_cloud[i_new_locations[i]].theta + np.random.uniform(-np.pi/4,np.pi/4)
 
 
     def update_particles_with_laser(self, r, theta):
@@ -265,10 +264,17 @@ class ParticleFilter(Node):
 
         # weight function
         errors = np.abs(particle_distances - robot_distance)
+        errors[np.isnan(errors)] = 5
         error_ratio = errors[0] / errors 
         weights = error_ratio/np.sum(error_ratio)
         for i,particle in enumerate(self.particle_cloud):
-            self.particle_cloud[i].w = weights[i]
+            if np.isnan(weights[i]):
+                self.particle_cloud[i].w = 0
+            else:
+                self.particle_cloud[i].w = weights[i]
+
+        print("Sum: ", np.sum(weights[~np.isnan(weights)]))
+
         print("Weights!! ", weights)
         print("Errors", errors)
         
