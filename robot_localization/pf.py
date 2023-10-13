@@ -46,7 +46,6 @@ class Particle(object):
         return Pose(position=Point(x=self.x, y=self.y, z=0.0),
                     orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))
 
-    # TODO: define additional helper functions if needed
 
 class ParticleFilter(Node):
     """ The class that represents a Particle Filter ROS Node
@@ -67,7 +66,7 @@ class ParticleFilter(Node):
             particle_cloud: a list of particles representing a probability distribution over robot poses
             current_odom_xy_theta: the pose of the robot in the odometry frame when the last filter update was performed.
                                    The pose is expressed as a list [x,y,theta] (where theta is the yaw)
-            thread: this thread runs your main loop
+            thread: this thread runs the main loop
     """
     def __init__(self):
         super().__init__('pf')
@@ -80,8 +79,6 @@ class ParticleFilter(Node):
 
         self.d_thresh = 0.2             # the amount of linear movement before performing an update
         self.a_thresh = math.pi/6       # the amount of angular movement before performing an update
-
-        # TODO: define additional constants if needed
 
         # pose_listener responds to selection of a new approximate robot location (for instance using rviz)
         self.create_subscription(PoseWithCovarianceStamped, 'initialpose', self.update_initial_pose, 10)
@@ -98,7 +95,7 @@ class ParticleFilter(Node):
         self.last_scan_timestamp = None
         # this is the current scan that our run_loop should process
         self.scan_to_process = None
-        # your particle cloud will go here
+        # particle cloud will go here
         self.particle_cloud = []
 
         self.current_odom_xy_theta = []
@@ -147,13 +144,11 @@ class ParticleFilter(Node):
             return
         
         (r, theta) = self.transform_helper.convert_scan_to_polar_in_robot_frame(msg, self.base_frame)
-        # print("r[0]={0}, theta[0]={1}".format(r[0], theta[0]))
         # clear the current scan so that we can process the next one
         self.scan_to_process = None
 
         self.odom_pose = new_pose
         new_odom_xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
-        # print("x: {0}, y: {1}, yaw: {2}".format(*new_odom_xy_theta))
 
         if not self.current_odom_xy_theta:
             self.current_odom_xy_theta = new_odom_xy_theta
@@ -177,14 +172,13 @@ class ParticleFilter(Node):
 
     def update_robot_pose(self):
         """ Update the estimate of the robot's pose given the updated particles.
-            There are two logical methods for this:
-                (1): compute the mean pose
-                (2): compute the most likely pose (i.e. the mode of the distribution)
+            Compute the most likely pose (i.e. the mode of the distribution)
         """
         weights = np.array([particle.w for particle in self.particle_cloud])
+        # Select the particle with the highest weight
         probable_particle = self.particle_cloud[np.argmax(weights)]      
-        
-        self.robot_pose = probable_particle.as_pose()
+        self.robot_pose = probable_particle.as_pose()           # set pose to match chosen particle
+
         if hasattr(self, 'odom_pose'):
             self.transform_helper.fix_map_to_odom_transform(self.robot_pose,
                                                             self.odom_pose)
@@ -198,22 +192,17 @@ class ParticleFilter(Node):
             when the particles were last updated and the current odometry.
         """
         new_odom_xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
-        # compute the change in x,y,theta since our last update
+        # Compute the change in x,y,theta since our last update using pose matrices
         if self.current_odom_xy_theta:
             new_odom_matrix = self.create_pose(new_odom_xy_theta)
             curr_odom_matrix = self.create_pose(self.current_odom_xy_theta)
-
             delta_matrix = np.linalg.inv(curr_odom_matrix) @ new_odom_matrix
-            delta_x_body = delta_matrix[0,2]
-            delta_y_body = delta_matrix[1,2]
-            delta_theta_body = np.arctan2(delta_matrix[1,0],delta_matrix[0,0])
-
             self.current_odom_xy_theta = new_odom_xy_theta
         else:
             self.current_odom_xy_theta = new_odom_xy_theta
             return
 
-        print(delta_matrix)
+        # Update all of the particles with the delta matrix
         for i,particle in enumerate(self.particle_cloud):
             particle_matrix = self.create_pose([particle.x,particle.y,particle.theta])
             particle_matrix_new = particle_matrix @ delta_matrix
@@ -223,7 +212,10 @@ class ParticleFilter(Node):
 
     def create_pose(self,v_pose):
         """
-        doc string later hehehehehehehehe
+            Create a pose matrix of the particles position.
+            v_pose: is a tuple of the x, y, and theta of a particle
+
+            returns: an array of the pose matrix
         """
         pose_matrix = np.array([
             [np.cos(v_pose[2]), -np.sin(v_pose[2]), v_pose[0]],
@@ -239,13 +231,18 @@ class ParticleFilter(Node):
             function draw_random_sample in helper_functions.py.
         """
         weights = np.array([particle.w for particle in self.particle_cloud])
-        median_weight = np.percentile(weights, 20)
-        i_particles_to_replace = np.where(weights <= median_weight)[0]
+        # Select the lower 20% of particles to replace
+        weights_to_replace = np.percentile(weights, 20)
+        i_particles_to_replace = np.where(weights <= weights_to_replace)[0]
         num_replace = len(i_particles_to_replace)
+        # Randomly (a weighted random) select new locations to put the replaced particles
         i_new_locations = np.random.choice(range(len(weights)), num_replace, p = weights).astype(np.int)
+        
+        # Change the location of all the selected particles to their new location
         for i,i_replace in enumerate(i_particles_to_replace):
             self.particle_cloud[i_replace].x = self.particle_cloud[i_new_locations[i]].x
             self.particle_cloud[i_replace].y = self.particle_cloud[i_new_locations[i]].y
+            # Randomize the theta position based on the the particle selected
             self.particle_cloud[i_replace].theta = self.particle_cloud[i_new_locations[i]].theta + np.random.uniform(-np.pi/4,np.pi/4)
 
 
@@ -262,21 +259,19 @@ class ParticleFilter(Node):
         # Get shortest distance from real robot
         robot_distance = np.min(r)
 
-        # weight function
+        # Weight function
         errors = np.abs(particle_distances - robot_distance)
         errors[np.isnan(errors)] = 5
         error_ratio = errors[0] / errors 
         weights = error_ratio/np.sum(error_ratio)
+        
+        # Update the weights of each particle
         for i,particle in enumerate(self.particle_cloud):
-            if np.isnan(weights[i]):
+            if np.isnan(weights[i]):       # remove any nan readings by setting their value to zero
                 self.particle_cloud[i].w = 0
             else:
                 self.particle_cloud[i].w = weights[i]
 
-        print("Sum: ", np.sum(weights[~np.isnan(weights)]))
-
-        print("Weights!! ", weights)
-        print("Errors", errors)
         
     def update_initial_pose(self, msg):
         """ Callback function to handle re-initializing the particle filter based on a pose estimate.
@@ -287,15 +282,14 @@ class ParticleFilter(Node):
     def initialize_particle_cloud(self, timestamp, xy_theta=None):
         """ Initialize the particle cloud.
             Arguments
-            timestamp: hi :)
             xy_theta: a triple consisting of the mean x, y, and theta (yaw) to initialize the
                       particle cloud around.  If this input is omitted, the odometry will be used """
         if xy_theta is None:
             xy_theta = self.transform_helper.convert_pose_to_xy_and_theta(self.odom_pose)
         self.particle_cloud = []
         
-        print("Helloooooo WOrldkafsjpag", xy_theta)
-        delta_theta = 2*math.pi/self.n_particles
+        # Place all of the particles on the origin
+        delta_theta = 2*math.pi/self.n_particles        # Find the angle to increment each particle's theta by
         for i in range(self.n_particles):
             particle_0 = Particle(x=xy_theta[0],y=xy_theta[1],theta=xy_theta[2]+delta_theta*i)
             self.particle_cloud.append(particle_0)
