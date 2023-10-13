@@ -17,7 +17,7 @@ To start the algorithm, particles need to be created and placed on the map. Each
 ### Update particles to match robot movement
 	
 The second step in the particle filter algorithm is to move each particle according to the robot’s own movement, ie, if the robot drives forward and turns to its right, then every particle should do the same. This task is non-trivial because the displacement must be applied to each particle within its own body-frame. To perform this elegantly, we use pose matrices to represent the transformations.
-Let us first define our notation. Let $g$ represent a pose vector $\begin{bmatrix} x & y & \theta\end{bmatrix}^\textrm{T}$. Each pose vector has a corresponding pose matrix $\hat{g}$ of the following form:
+Let us first define our notation. Let $g$ represent a pose vector $\begin{bmatrix} x & y & \theta \end{bmatrix}^\textrm{T}$. Each pose vector has a corresponding pose matrix $\hat{g}$ of the following form:
 
 $$
 \hat{g} = 
