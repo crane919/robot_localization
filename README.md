@@ -61,9 +61,9 @@ $$
 This confirms that the particles whose closest distance more closely match the real robots’ will have a higher weight, and that all of the weights will sum to one. This concludes the description of our re-weighting function.
 
 ### Redistribute Particles based on Particle Weight
-We decided to redistribute the bottom 20% of particles as determined by the weighting function. 20% was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle poisons (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
+We decided to redistribute the bottom twenty percent of particles as determined by the weighting function. Twenty percent was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle positions (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
 
-To determine the theta, we used the theta of the particle that had been randomly sampled and then randomly added or subtracted up to 90 degrees from that value. At first we had the theta be entirely random, but we noticed that “correct” particles that we wanted to follow tended to have fairly correct orientations already. By making the choice of theta totally random, it added too much noise to the model. The theta being varied slightly reduces the noise being added, but still provides a bit of randomness.
+To determine theta, we used the value of theta that had been randomly sampled and then randomly added or subtracted a value up to 45 degrees from the original theta. Initially, we made theta entirely random, but we noticed that 'correct' particles we wanted to follow often already had reasonably accurate orientations. Making the choice of theta entirely random introduced too much noise into the model. Varying theta slightly reduces the amount of noise introduced while still providing a degree of randomness.
 
 ### Compute Robot’s Position
 We computed the robot position to match the highest weighted particle.	
@@ -75,7 +75,6 @@ We computed the robot position to match the highest weighted particle.
 - Did you learn any interesting lessons for future robotic programming projects? These could relate to working on robotics projects in teams, working on more open-ended (and longer term) problems, or any other relevant topic.
 
 ### Improvements
-- Getting bill into the repo :(
 - Make starting positions better for particle initialization
     - All of our particles initialize in the same location. This ends up working pretty well for the bag file that we test our algorithm on, since our first guess is really good. However, if we had more time, we would want to uniformly distribute the particles so that we could find the robot anywhere on the map regardless of starting position. We ran out of time to test out a uniform distribution of particles.
 
