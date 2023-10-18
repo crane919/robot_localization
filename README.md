@@ -1,6 +1,8 @@
 # Robot Localization
 ![](media/particle_filter_3x.gif)
 
+Team: Bill & Crane 
+
 ## Overview
 The goal of this project was to create a particle filter to determine a robots location in a pre-built map. The algorithm uses lidar and odometry readings to provide a continually updating estimation of the robots location. 
 
@@ -61,7 +63,7 @@ $$
 This confirms that the particles whose closest distance more closely match the real robots’ will have a higher weight, and that all of the weights will sum to one. This concludes the description of our re-weighting function.
 
 ### Redistribute Particles based on Particle Weight
-We decided to redistribute the bottom 20% of particles as determined by the weighting function. 20% was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle poisons (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
+We decided to redistribute the bottom 20% of particles as determined by the weighting function. 20% was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle positions (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
 
 To determine the theta, we used the theta of the particle that had been randomly sampled and then randomly added or subtracted up to 90 degrees from that value. At first we had the theta be entirely random, but we noticed that “correct” particles that we wanted to follow tended to have fairly correct orientations already. By making the choice of theta totally random, it added too much noise to the model. The theta being varied slightly reduces the noise being added, but still provides a bit of randomness.
 
@@ -70,17 +72,16 @@ We computed the robot position to match the highest weighted particle.
 
 
 ## Challenges and Improvements
-- What if any challenges did you face along the way?
-- What would you do to improve your project if you had more time?
-- Did you learn any interesting lessons for future robotic programming projects? These could relate to working on robotics projects in teams, working on more open-ended (and longer term) problems, or any other relevant topic.
+
+### Challenges
+One of our team's greatest challenges was the logistics: Crane and I were both busy during the first week of the project, so practically we completed the project implementation within one week. This meant that while our meetings were all productive, we did not have time to dwell on any individual topic.
+
+This was reflected in our incorrect weight calculation, and specifically in our  incorrect error metric. Our first idea was to compare the results of the "find closest obstacle distance" function of each particle with the real robot's shortest distance laser scan. We implemented this to get an MVP working, recognizing that it will be unable to weigh based on the particles' orientation and thus particles in the same position but different headings will all receive the same weight. This caused the "best particle" to constantly move in incorrect directions, creating an overall very jumpy state estimate whose orientation was usually wrong. Due to our time constraints, we were not able to devote more time to identifying a better a weighing algorithm.
 
 ### Improvements
-- Getting bill into the repo :(
-- Make starting positions better for particle initialization
-    - All of our particles initialize in the same location. This ends up working pretty well for the bag file that we test our algorithm on, since our first guess is really good. However, if we had more time, we would want to uniformly distribute the particles so that we could find the robot anywhere on the map regardless of starting position. We ran out of time to test out a uniform distribution of particles.
+One clear area for improvement is the weighing function. As Paul mentioned to us in class, the correct weighing function would transform the real laser scans into each particle's frame, and apply the "find closest obstacle distance" to all these particle-frame laser scans. The error residual would thus be the sum of how far away each of these particle-frame scans are from the obstacles: the correct particle's particle-frame scans would align perfectly with the map.
 
-- Make weights based on orientation of particle
-    - The weighted function was based off the closest wall to the position of the robot. However it didn’t take into account theta in it’s calculation. So any particle in the same position regardless of the theta would have the same weight. However if the weighted function calculated itself based off the distance to wall that it’s orientation faced or it took in a list of distances and angles then it would be a stronger weighting function. We looked into implementing this, but determined that we didn’t have time to figure out how to find out that information from the way that occupancy field was set up.
+In a similar vein of improving-upon-MVP-algorithms, our initial seeding algorithm could be significantly improved. Because we did not consider if particles spawned in an area would be spawned in obstacles or impossible-to-reach spaces, we simply spawned all particles on the selected initial seed position, but with a uniform distribution of orientation. This makes our algorithm perform poorly when the initial guess is far away from the real initial position, as the particles are unlikely to stumble near the correct position and "discover" the truth. A better initial seeding algorithm would spawn particles in an area around the intiail guess, in order to be more robust to poor initial guesses.
 
 ## Team bonding
 ![](media/nails.jpg) We had a mani-pedi party :)
