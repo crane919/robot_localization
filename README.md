@@ -19,7 +19,7 @@ To start the algorithm, particles need to be created and placed on the map. Each
 ### Update particles to match robot movement
 	
 The second step in the particle filter algorithm is to move each particle according to the robot’s own movement, ie, if the robot drives forward and turns to its right, then every particle should do the same. This task is non-trivial because the displacement must be applied to each particle within its own body-frame. To perform this elegantly, we use pose matrices to represent the transformations.
-Let us first define our notation. Let $g$ represent a pose vector $\begin{bmatrix} x & y & \theta \end{bmatrix}^\textrm{T}$. Each pose vector has a corresponding pose matrix $\hat{g}$ of the following form:
+Let us first define our notation. Let $g$ represent a pose vector $[ x \ y \ \theta]$. Each pose vector has a corresponding pose matrix $\hat{g}$ of the following form:
 
 $$
 \hat{g} = 
@@ -63,11 +63,7 @@ $$
 This confirms that the particles whose closest distance more closely match the real robots’ will have a higher weight, and that all of the weights will sum to one. This concludes the description of our re-weighting function.
 
 ### Redistribute Particles based on Particle Weight
-<<<<<<< HEAD
-We decided to redistribute the bottom 20% of particles as determined by the weighting function. 20% was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle positions (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
-=======
 We decided to redistribute the bottom twenty percent of particles as determined by the weighting function. Twenty percent was found to best fit the map we were testing on and provide a good balance of leaving successful particles and inducing randomness. To add the particles back in, we wanted to give them all a chance to spawn in any of the current particle positions (including the position of the particles we just removed). We used the particle weights to create a weighted random function so that the redistributed particles would tend to go to the higher weighted positions.
->>>>>>> fee94b1fc7b64ac7ad531233d8e14a97651d4a18
 
 To determine theta, we used the value of theta that had been randomly sampled and then randomly added or subtracted a value up to 45 degrees from the original theta. Initially, we made theta entirely random, but we noticed that 'correct' particles we wanted to follow often already had reasonably accurate orientations. Making the choice of theta entirely random introduced too much noise into the model. Varying theta slightly reduces the amount of noise introduced while still providing a degree of randomness.
 
@@ -86,6 +82,9 @@ This was reflected in our incorrect weight calculation, and specifically in our 
 One clear area for improvement is the weighing function. As Paul mentioned to us in class, the correct weighing function would transform the real laser scans into each particle's frame, and apply the "find closest obstacle distance" to all these particle-frame laser scans. The error residual would thus be the sum of how far away each of these particle-frame scans are from the obstacles: the correct particle's particle-frame scans would align perfectly with the map.
 
 In a similar vein of improving-upon-MVP-algorithms, our initial seeding algorithm could be significantly improved. Because we did not consider if particles spawned in an area would be spawned in obstacles or impossible-to-reach spaces, we simply spawned all particles on the selected initial seed position, but with a uniform distribution of orientation. This makes our algorithm perform poorly when the initial guess is far away from the real initial position, as the particles are unlikely to stumble near the correct position and "discover" the truth. A better initial seeding algorithm would spawn particles in an area around the intiail guess, in order to be more robust to poor initial guesses.
+
+### Learnings
+![](media/miro.png) To manage our tight timeline, at the start of the project how many class periods and meetings we had, and worked backwards to determine project deliverables for each meeting. Having goals for each meeting helped us orient ourselves when we met, and it gave us something to measure against at the end of the meeting. Having a timeline also helped us determine when we needed to schedule additional meetings. Overall, the project timeline was very helpful for us.
 
 ## Team bonding
 ![](media/nails.jpg) We had a mani-pedi party :)
